@@ -1,29 +1,12 @@
 
-/* =================================
-   RACE GAME
-   Main JavaScript
-================================= */
-
-/* BASISINSTELLINGEN */
+/* ==========================================
+   RACE GAME - MAIN SYSTEM
+========================================== */
 
 const game = {
     name: "RACE GAME",
-    season: 2027,
-    mode: "Career Mode",
-    team: "Amateurteam"
+    season: 2027
 };
-
-function initializeGame() {
-    console.log("RACE GAME is gestart!");
-    console.log("Seizoen:", game.season);
-}
-
-initializeGame();
-
-
-/* =================================
-   CARRIERE OPSLAAN EN LADEN
-================================= */
 
 const defaultCareer = {
     started: false,
@@ -40,16 +23,12 @@ let career = { ...defaultCareer };
 
 function loadCareer() {
     try {
-        const savedCareer = localStorage.getItem("raceGameCareer");
-
-        if (savedCareer) {
-            career = {
-                ...defaultCareer,
-                ...JSON.parse(savedCareer)
-            };
+        const saved = localStorage.getItem("raceGameCareer");
+        if (saved) {
+            career = { ...defaultCareer, ...JSON.parse(saved) };
         }
     } catch (error) {
-        console.error("Carrière kon niet worden geladen:", error);
+        console.error("Could not load career:", error);
     }
 }
 
@@ -60,33 +39,451 @@ function saveCareer() {
 loadCareer();
 
 
-/* =================================
-   CARRIERE STARTEN
-================================= */
+/* ==========================================
+   CAREER DESIGN
+========================================== */
 
-function startCareer(teamName, teamColor) {
-    if (!teamName || !teamName.trim()) {
-        alert("Vul eerst een teamnaam in!");
-        return;
+const careerStyles = document.createElement("style");
+
+careerStyles.textContent = `
+.career-screen {
+    color: #edf4fb;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.career-hero {
+    min-height: 350px;
+    padding: 35px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background:
+        linear-gradient(90deg, rgba(5,12,21,.97), rgba(5,12,21,.65), rgba(5,12,21,.2)),
+        linear-gradient(0deg, rgba(5,12,21,.5), transparent),
+        url('https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1600&q=85')
+        center 45% / cover;
+    border: 1px solid #263b50;
+}
+
+.career-eyebrow {
+    color: #168bff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+}
+
+.career-hero h2 {
+    font-size: clamp(38px, 6vw, 66px);
+    line-height: .98;
+    letter-spacing: -2px;
+    margin: 0;
+    font-weight: 900;
+    max-width: 600px;
+}
+
+.career-hero h2 span {
+    color: #168bff;
+}
+
+.career-hero p {
+    color: #bdcad8;
+    max-width: 430px;
+    line-height: 1.7;
+    font-size: 14px;
+    margin: 20px 0;
+}
+
+.career-tags {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+.career-tag {
+    background: rgba(22,139,255,.15);
+    border: 1px solid rgba(22,139,255,.4);
+    color: #8ecaff;
+    border-radius: 4px;
+    padding: 7px 11px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.career-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.career-section-title h2 {
+    margin: 0;
+    font-size: 19px;
+    letter-spacing: 1px;
+}
+
+.career-section-title span {
+    font-size: 10px;
+    color: #71869d;
+    letter-spacing: 1px;
+}
+
+.career-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 14px;
+}
+
+.career-fact {
+    background: #111e2d;
+    border: 1px solid #263b50;
+    border-radius: 9px;
+    padding: 18px;
+}
+
+.career-fact span {
+    display: block;
+    color: #8299b0;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    margin-bottom: 9px;
+}
+
+.career-fact strong {
+    font-size: 23px;
+    color: #fff;
+}
+
+.career-setup {
+    background: #111e2d;
+    border: 1px solid #263b50;
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.career-setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-top: 22px;
+}
+
+.career-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.career-field label {
+    color: #9eb1c5;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.career-field input {
+    width: 100%;
+    box-sizing: border-box;
+    background: #09131f;
+    border: 1px solid #30465e;
+    border-radius: 6px;
+    padding: 15px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+}
+
+.career-field input:focus {
+    border-color: #168bff;
+}
+
+.career-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.career-color {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    outline: 1px solid transparent;
+    cursor: pointer;
+}
+
+.career-color.selected {
+    outline-color: white;
+    border-color: #111e2d;
+}
+
+.career-start-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid #263b50;
+}
+
+.career-budget-label {
+    color: #8299b0;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+}
+
+.career-budget-value {
+    color: white;
+    font-size: 25px;
+    font-weight: 900;
+    margin-top: 5px;
+}
+
+.career-start-button {
+    background: #168bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 17px 25px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.career-start-button:hover {
+    background: #0875df;
+    transform: translateY(-2px);
+}
+
+.career-error {
+    color: #ff7777;
+    font-size: 12px;
+    margin-top: 12px;
+}
+
+.career-overview {
+    background: #111e2d;
+    border: 1px solid #263b50;
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.career-team-heading {
+    border-left: 5px solid;
+    padding-left: 18px;
+    margin: 20px 0;
+}
+
+.career-team-heading h2 {
+    margin: 0 0 7px;
+    font-size: 28px;
+}
+
+.career-team-heading p {
+    color: #8299b0;
+    margin: 0;
+    font-size: 12px;
+}
+
+@media (max-width: 650px) {
+    .career-hero {
+        padding: 24px;
+        min-height: 300px;
     }
 
-    career = {
-        ...defaultCareer,
-        started: true,
-        teamName: teamName.trim(),
-        teamColor: teamColor
-    };
+    .career-setup-grid {
+        grid-template-columns: 1fr;
+    }
 
-    saveCareer();
-    showPage("Mijn carrière");
+    .career-start-bottom {
+        align-items: stretch;
+        flex-direction: column;
+    }
 
-    alert("Je carrière is gestart! Welkom bij " + career.teamName + "!");
+    .career-start-button {
+        width: 100%;
+    }
+}
+`;
+
+document.head.appendChild(careerStyles);
+
+
+/* ==========================================
+   CAREER SCREEN CONTENT
+========================================== */
+
+function careerPageContent() {
+    if (!career.started) {
+        return `
+        <div class="career-screen">
+
+            <section class="career-hero">
+                <div class="career-eyebrow">
+                    YOUR JOURNEY STARTS HERE
+                </div>
+
+                <h2>
+                    BUILD YOUR<br>
+                    <span>LEGACY.</span>
+                </h2>
+
+                <p>
+                    Van een klein amateurteam naar de absolute top
+                    van het wielrennen. Bouw jouw ploeg en schrijf geschiedenis.
+                </p>
+
+                <div class="career-tags">
+                    <span class="career-tag">2027 SEASON</span>
+                    <span class="career-tag">CAREER MODE</span>
+                    <span class="career-tag">NEW CHALLENGE</span>
+                </div>
+            </section>
+
+            <div class="career-section-title">
+                <h2>CREATE YOUR TEAM</h2>
+                <span>TEAM SETUP / 01</span>
+            </div>
+
+            <div class="career-facts">
+                <div class="career-fact">
+                    <span>STARTBUDGET</span>
+                    <strong>€100.000</strong>
+                </div>
+
+                <div class="career-fact">
+                    <span>TEAMNIVEAU</span>
+                    <strong>AMATEUR</strong>
+                </div>
+            </div>
+
+            <section class="career-setup">
+
+                <div class="career-section-title">
+                    <h2>TEAMGEGEVENS</h2>
+                    <span>BUILD YOUR SQUAD</span>
+                </div>
+
+                <div class="career-setup-grid">
+
+                    <div class="career-field">
+                        <label for="career-team-name">TEAMNAAM</label>
+                        <input
+                            id="career-team-name"
+                            type="text"
+                            maxlength="30"
+                            placeholder="Bijvoorbeeld: Blue Storm Racing"
+                        >
+                    </div>
+
+                    <div class="career-field">
+                        <label>TEAMKLEUR</label>
+
+                        <div class="career-colors">
+                            <button class="career-color selected"
+                                type="button" data-color="#168bff"
+                                style="background:#168bff"></button>
+
+                            <button class="career-color"
+                                type="button" data-color="#e63946"
+                                style="background:#e63946"></button>
+
+                            <button class="career-color"
+                                type="button" data-color="#20b486"
+                                style="background:#20b486"></button>
+
+                            <button class="career-color"
+                                type="button" data-color="#f0b429"
+                                style="background:#f0b429"></button>
+
+                            <button class="career-color"
+                                type="button" data-color="#a855f7"
+                                style="background:#a855f7"></button>
+
+                            <button class="career-color"
+                                type="button" data-color="#f5f5f5"
+                                style="background:#f5f5f5"></button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="career-start-bottom">
+                    <div>
+                        <div class="career-budget-label">
+                            AVAILABLE STARTING BUDGET
+                        </div>
+                        <div class="career-budget-value">€100.000</div>
+                    </div>
+
+                    <button class="career-start-button" id="start-career-button">
+                        START CAREER →
+                    </button>
+                </div>
+
+                <div id="career-error" class="career-error"></div>
+
+            </section>
+        </div>
+        `;
+    }
+
+    return `
+        <div class="career-screen">
+            <section class="career-hero">
+                <div class="career-eyebrow">YOUR JOURNEY HAS BEGUN</div>
+                <h2>WELCOME TO<br><span>${escapeHTML(career.teamName)}</span></h2>
+                <p>Het seizoen 2027 is begonnen. Bouw aan je team en jaag op overwinningen.</p>
+                <div class="career-tags">
+                    <span class="career-tag">SEASON 2027</span>
+                    <span class="career-tag">CAREER MODE</span>
+                </div>
+            </section>
+
+            <div class="career-overview">
+                <div class="career-team-heading"
+                    style="border-color:${career.teamColor}">
+                    <h2>${escapeHTML(career.teamName)}</h2>
+                    <p>AMATEUR TEAM · SEASON ${career.season}</p>
+                </div>
+
+                <div class="career-facts">
+                    <div class="career-fact">
+                        <span>TEAM BUDGET</span>
+                        <strong>€${career.budget.toLocaleString("nl-NL")}</strong>
+                    </div>
+                    <div class="career-fact">
+                        <span>OVERWINNINGEN</span>
+                        <strong>${career.wins}</strong>
+                    </div>
+                    <div class="career-fact">
+                        <span>GEREDEN KOERSEN</span>
+                        <strong>${career.races}</strong>
+                    </div>
+                    <div class="career-fact">
+                        <span>RENNERS</span>
+                        <strong>${career.riders}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 
-/* =================================
-   HULPFUNCTIE
-================================= */
+/* ==========================================
+   HELPER
+========================================== */
 
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, character => ({
@@ -99,101 +496,9 @@ function escapeHTML(value) {
 }
 
 
-/* =================================
-   CARRIEREPAGINA
-================================= */
-
-function careerPageContent() {
-    if (!career.started) {
-        return `
-            <div class="career-start">
-                <h2>START JOUW CARRIÈRE</h2>
-                <p class="muted">
-                    Bouw jouw eigen wielerteam en schrijf geschiedenis.
-                </p>
-
-                <div class="career-form">
-                    <label for="team-name">TEAMNAAM</label>
-
-                    <input
-                        type="text"
-                        id="team-name"
-                        placeholder="Bijvoorbeeld: Blue Storm Racing"
-                        maxlength="30"
-                    >
-
-                    <label for="team-color">TEAMKLEUR</label>
-
-                    <select id="team-color">
-                        <option value="#168bff">Electric Blue</option>
-                        <option value="#e63946">Racing Red</option>
-                        <option value="#20b486">Emerald Green</option>
-                        <option value="#f0b429">Championship Gold</option>
-                        <option value="#a855f7">Purple</option>
-                    </select>
-
-                    <div class="career-budget">
-                        <span>STARTBUDGET</span>
-                        <strong>€100.000</strong>
-                    </div>
-
-                    <button
-                        class="career-button"
-                        onclick="startCareer(
-                            document.getElementById('team-name').value,
-                            document.getElementById('team-color').value
-                        )"
-                    >
-                        START CARRIÈRE →
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    return `
-        <div class="career-overview">
-            <h2>WELKOM BIJ ${escapeHTML(career.teamName)}</h2>
-
-            <p class="muted">
-                Jouw wielercarrière is begonnen. Tijd om geschiedenis te schrijven!
-            </p>
-
-            <div class="race-info">
-                <div>
-                    <strong>${career.season}</strong>
-                    <span>HUIDIG SEIZOEN</span>
-                </div>
-
-                <div>
-                    <strong>€${career.budget.toLocaleString("nl-NL")}</strong>
-                    <span>TEAMBUDGET</span>
-                </div>
-
-                <div>
-                    <strong>${career.wins}</strong>
-                    <span>OVERWINNINGEN</span>
-                </div>
-
-                <div>
-                    <strong>${career.riders}</strong>
-                    <span>RENNERS</span>
-                </div>
-            </div>
-
-            <div class="career-team-color"
-                 style="border-left: 5px solid ${career.teamColor}; padding: 15px; margin-top: 25px;">
-                <strong>JOUW TEAMKLEUR</strong>
-                <p>${career.teamColor}</p>
-            </div>
-        </div>
-    `;
-}
-
-
-/* =================================
-   PAGINA-INHOUD
-================================= */
+/* ==========================================
+   PAGE SYSTEM
+========================================== */
 
 const main = document.querySelector(".main-content");
 const topbar = document.querySelector(".topbar");
@@ -211,91 +516,101 @@ main.insertBefore(pageContainer, topbar.nextSibling);
 
 
 const pages = {
-
     "Mijn carrière": {
         title: "Mijn carrière",
-        content: () => careerPageContent()
+        content: careerPageContent
     },
 
     "Mijn team": {
         title: "Mijn team",
-        content: `
-            <h2>Teamselectie</h2>
-            <p class="muted">Beheer je renners en ontdek hun specialiteiten.</p>
-
-            <div class="race-info">
-                <div><strong>12</strong><span>RENNERS</span></div>
-                <div><strong>4</strong><span>VRIJE PLEKKEN</span></div>
-                <div><strong>78%</strong><span>GEMIDDELDE VORM</span></div>
-            </div>
+        content: () => `
+            <h2>TEAM MANAGEMENT</h2>
+            <p>Hier gaan we straks jouw renners beheren.</p>
         `
     },
 
     "Training": {
         title: "Training",
-        content: `
-            <h2>Trainingscentrum</h2>
-            <p class="muted">Ontwikkel de kwaliteiten van jouw renners.</p>
-
-            <div class="race-info">
-                <div><strong>Uithouding</strong><span>TRAININGSTYPE</span></div>
-                <div><strong>Sprint</strong><span>TRAININGSTYPE</span></div>
-                <div><strong>Klimmen</strong><span>TRAININGSTYPE</span></div>
-            </div>
+        content: () => `
+            <h2>TRAINING CENTER</h2>
+            <p>Hier gaan we straks je renners trainen.</p>
         `
     },
 
     "Wedstrijdkalender": {
         title: "Wedstrijdkalender",
-        content: `
-            <h2>Wedstrijdseizoen 2027</h2>
-            <p class="muted">Plan je wedstrijden en selecteer je renners.</p>
-
-            <div class="race-info">
-                <div><strong>15 MRT</strong><span>OMLOOP VAN DE KEMPEN</span></div>
-                <div><strong>21 MRT</strong><span>GP ZUID-LIMBURG</span></div>
-                <div><strong>28 MRT</strong><span>RONDE VAN BRABANT</span></div>
-            </div>
+        content: () => `
+            <h2>RACE CALENDAR</h2>
+            <p>Hier komen straks alle wedstrijden van het seizoen.</p>
         `
     },
 
     "Koerssimulator": {
         title: "Koerssimulator",
-        content: `
-            <h2>Live koerscentrum</h2>
-            <p class="muted">Volg de wedstrijd en bepaal jouw tactiek.</p>
-
-            <div class="race-info">
-                <div><strong>146 KM</strong><span>KOERSAFSTAND</span></div>
-                <div><strong>180</strong><span>RENNERS</span></div>
-                <div><strong>00:00</strong><span>KOERSTIJD</span></div>
-            </div>
-
-            <p style="margin-top:25px;color:#72baff">
-                De echte koerssimulator bouwen we later!
-            </p>
+        content: () => `
+            <h2>RACE SIMULATOR</h2>
+            <p>Hier gaan we later de echte koerssimulator bouwen.</p>
         `
     },
 
     "Financiën": {
         title: "Financiën",
-        content: `
-            <h2>Teamfinanciën</h2>
-            <p class="muted">Beheer het budget van jouw wielerteam.</p>
-
-            <div class="race-info">
-                <div><strong>€25.000</strong><span>TEAMBUDGET</span></div>
-                <div><strong>€0</strong><span>INKOMSTEN</span></div>
-                <div><strong>€0</strong><span>UITGAVEN</span></div>
-            </div>
+        content: () => `
+            <h2>TEAM FINANCES</h2>
+            <p>Hier kun je straks inkomsten en uitgaven beheren.</p>
         `
     }
 };
 
 
-/* =================================
-   PAGINA OPENEN
-================================= */
+/* ==========================================
+   START CAREER BUTTON
+========================================== */
+
+let selectedTeamColor = "#168bff";
+
+function connectCareerControls() {
+    const colorButtons = pageContainer.querySelectorAll(".career-color");
+
+    colorButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            selectedTeamColor = button.dataset.color;
+
+            colorButtons.forEach(item => {
+                item.classList.toggle("selected", item === button);
+            });
+        });
+    });
+
+    const startButton = document.getElementById("start-career-button");
+
+    if (startButton) {
+        startButton.addEventListener("click", () => {
+            const name = document.getElementById("career-team-name").value.trim();
+            const error = document.getElementById("career-error");
+
+            if (!name) {
+                error.textContent = "Vul eerst een teamnaam in.";
+                return;
+            }
+
+            career = {
+                ...defaultCareer,
+                started: true,
+                teamName: name,
+                teamColor: selectedTeamColor
+            };
+
+            saveCareer();
+            showPage("Mijn carrière");
+        });
+    }
+}
+
+
+/* ==========================================
+   SHOW PAGE
+========================================== */
 
 function showPage(name) {
     const isDashboard = name === "Dashboard";
@@ -314,11 +629,11 @@ function showPage(name) {
         if (!page) return;
 
         pageTitle.textContent = page.title;
+        pageContainer.innerHTML = page.content();
 
-        pageContainer.innerHTML =
-            typeof page.content === "function"
-                ? page.content()
-                : page.content;
+        if (name === "Mijn carrière") {
+            connectCareerControls();
+        }
     }
 
     document.querySelectorAll("nav a").forEach(link => {
@@ -330,24 +645,15 @@ function showPage(name) {
 }
 
 
-/* =================================
-   MENU-KNOPPEN
-================================= */
+/* ==========================================
+   NAVIGATION
+========================================== */
 
 document.querySelectorAll("nav a").forEach(link => {
     link.addEventListener("click", event => {
         event.preventDefault();
-
-        const pageName = link.textContent.trim();
-
-        showPage(pageName);
+        showPage(link.textContent.trim());
     });
 });
 
-
-/* =================================
-   RACE GAME GESTART
-================================= */
-
-console.log("RACE GAME is klaar!");
-console.log("Carrière geladen:", career.started);
+console.log("RACE GAME loaded!");
