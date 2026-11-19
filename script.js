@@ -159,3 +159,42 @@ document.querySelectorAll("nav a").forEach(link => {
         showPage(pageName);
     });
 });
+// ================================
+// RACE GAME - CARRIERE SYSTEEM
+// ================================
+
+let career = {
+    started: false,
+    teamName: "",
+    teamColor: "#168bff",
+    budget: 100000,
+    season: 2027,
+    wins: 0,
+    races: 0,
+    riders: 12
+};
+
+function startCareer(teamName, teamColor) {
+    if (!teamName.trim()) {
+        alert("Vul eerst een teamnaam in!");
+        return;
+    }
+
+    career.started = true;
+    career.teamName = teamName.trim();
+    career.teamColor = teamColor;
+
+    localStorage.setItem("raceGameCareer", JSON.stringify(career));
+
+    alert("Je carrière is gestart! Welkom bij " + career.teamName + "!");
+}
+
+function loadCareer() {
+    const savedCareer = localStorage.getItem("raceGameCareer");
+
+    if (savedCareer) {
+        career = JSON.parse(savedCareer);
+    }
+}
+
+loadCareer();
