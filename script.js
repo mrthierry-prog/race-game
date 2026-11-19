@@ -844,88 +844,413 @@ document.head.appendChild(raceStyles);
 ========================================== */
 
 function racePageContent() {
-    return `
-        <div class="live-race">
 
-            <div class="race-hero">
-                <div class="race-label">RACE GAME / LIVE RACE</div>
+function racePageContent() {
+
+    // Maak de wielrenners als kleine SVG-tekeningen
+    const riderGraphic = `
+        <svg viewBox="0 0 100 70" class="cyclist-svg">
+            <circle cx="20" cy="49" r="15" fill="none"
+                stroke="#cbd5df" stroke-width="3"/>
+            <circle cx="78" cy="49" r="15" fill="none"
+                stroke="#cbd5df" stroke-width="3"/>
+            <path d="M20 49 L43 25 L57 49 L20 49 L38 49 L78 49 L57 49 L43 25"
+                fill="none" stroke="#168bff" stroke-width="3"/>
+            <path d="M43 25 L37 17 L30 17"
+                fill="none" stroke="#dce6f0" stroke-width="3"/>
+            <circle cx="48" cy="10" r="7" fill="#e9b995"/>
+            <path d="M40 10 Q45 -1 55 8 L54 12 Z"
+                fill="#e8f1fa"/>
+            <path d="M43 19 L60 22 L68 35 L54 37 L44 29 L34 34 L27 29 Z"
+                fill="TEAMCOLOR" stroke="#101820" stroke-width="1.5"/>
+            <path d="M43 29 L37 43 L29 46 M55 36 L62 44"
+                fill="none" stroke="#e9b995" stroke-width="5"
+                stroke-linecap="round"/>
+            <path d="M48 37 L44 49 L38 55 M55 37 L63 48 L69 53"
+                fill="none" stroke="#182431" stroke-width="5"
+                stroke-linecap="round"/>
+        </svg>
+    `;
+
+    const positions = [
+        [8, 43], [12, 25], [14, 57], [18, 39],
+        [21, 68], [24, 19], [27, 49], [30, 32],
+        [33, 61], [36, 22], [39, 45], [42, 69]
+    ];
+
+    const riders = positions.map((pos, index) => `
+        <div class="race-rider ${index === 0 ? "player" : ""}"
+             style="left:${pos[0]}%;top:${pos[1]}%">
+            ${riderGraphic.replace(
+                "TEAMCOLOR",
+                index === 0 ? "#168bff" : "#e7edf4"
+            )}
+        </div>
+    `).join("");
+
+    // Styling van de nieuwe koersweergave
+    if (!document.getElementById("real-race-styles")) {
+        const style = document.createElement("style");
+        style.id = "real-race-styles";
+
+        style.textContent = `
+            .real-race {
+                display:flex;
+                flex-direction:column;
+                gap:18px;
+                color:#edf4fb;
+            }
+
+            .race-heading {
+                background:linear-gradient(110deg,#101e2d,#080e16);
+                border:1px solid #263b50;
+                border-radius:12px;
+                padding:22px;
+            }
+
+            .race-heading small {
+                color:#168bff;
+                font-weight:900;
+                letter-spacing:2px;
+            }
+
+            .race-heading h2 {
+                margin:8px 0;
+                font-size:27px;
+            }
+
+            .camera-buttons {
+                display:flex;
+                gap:8px;
+                flex-wrap:wrap;
+            }
+
+            .camera-button {
+                background:#142336;
+                color:#aebfd0;
+                border:1px solid #30445b;
+                padding:11px 16px;
+                border-radius:6px;
+                font-weight:800;
+                cursor:pointer;
+            }
+
+            .camera-button.active {
+                color:white;
+                background:#124477;
+                border-color:#168bff;
+            }
+
+            .race-scene {
+                height:380px;
+                position:relative;
+                overflow:hidden;
+                border-radius:12px;
+                border:1px solid #40546a;
+                background:#526c43;
+            }
+
+            .race-sky {
+                position:absolute;
+                inset:0;
+                background:
+                    linear-gradient(180deg,#9bb4c0 0%,#7b9875 48%,#34452e 100%);
+            }
+
+            .race-road {
+                position:absolute;
+                width:120%;
+                height:68%;
+                left:-10%;
+                top:16%;
+                background:
+                    linear-gradient(180deg,#343a3e,#242a2e 50%,#343a3e);
+                transform:rotate(-5deg);
+                border-top:5px solid #aeb4b3;
+                border-bottom:5px solid #aeb4b3;
+                box-shadow:0 0 25px #1119;
+            }
+
+            .race-road::before {
+                content:"";
+                position:absolute;
+                top:50%;
+                left:0;
+                width:100%;
+                border-top:3px dashed #c5c8c0;
+                opacity:.65;
+            }
+
+            .race-road::after {
+                content:"";
+                position:absolute;
+                top:0;
+                left:50%;
+                width:3px;
+                height:100%;
+                background:#ffffff12;
+            }
+
+            .race-riders {
+                position:absolute;
+                inset:20px 10px;
+            }
+
+            .race-rider {
+                position:absolute;
+                width:48px;
+                height:38px;
+                z-index:3;
+                transition:left .8s ease,top .8s ease;
+                filter:drop-shadow(0 4px 3px #0009);
+            }
+
+            .race-rider.player {
+                width:58px;
+                height:45px;
+                z-index:5;
+                filter:drop-shadow(0 0 8px #168bff);
+            }
+
+            .cyclist-svg {
+                width:100%;
+                height:100%;
+            }
+
+            .race-rider.attack {
+                filter:drop-shadow(0 0 12px #168bff);
+            }
+
+            .race-scene.rear-camera .race-road {
+                width:155%;
+                height:95%;
+                left:-27%;
+                top:18%;
+                transform:perspective(400px) rotateX(35deg);
+                border-radius:45% 45% 0 0;
+            }
+
+            .race-scene.rear-camera .race-riders {
+                inset:30px 0 0;
+                transform:scale(1.15);
+            }
+
+            .race-scene.rear-camera .race-rider {
+                width:60px;
+                height:48px;
+            }
+
+            .race-scene.rear-camera .race-rider.player {
+                width:85px;
+                height:65px;
+                left:48% !important;
+                top:68% !important;
+            }
+
+            .race-camera-label {
+                position:absolute;
+                top:14px;
+                left:14px;
+                z-index:10;
+                background:#07111ddd;
+                padding:8px 12px;
+                border-radius:5px;
+                color:white;
+                font-size:10px;
+                font-weight:900;
+                letter-spacing:1px;
+            }
+
+            .race-live-dot {
+                display:inline-block;
+                width:7px;
+                height:7px;
+                border-radius:50%;
+                background:#ff4545;
+                margin-right:6px;
+            }
+
+            .race-stats {
+                display:grid;
+                grid-template-columns:repeat(3,1fr);
+                gap:10px;
+            }
+
+            .race-stat-box {
+                padding:16px;
+                background:#111e2d;
+                border:1px solid #293d53;
+                border-radius:8px;
+            }
+
+            .race-stat-box span {
+                display:block;
+                color:#849ab1;
+                font-size:10px;
+                margin-bottom:7px;
+            }
+
+            .race-stat-box strong {
+                font-size:21px;
+            }
+
+            .race-progress {
+                height:8px;
+                background:#263b50;
+                border-radius:10px;
+                overflow:hidden;
+            }
+
+            .race-progress-fill {
+                height:100%;
+                width:0;
+                background:#168bff;
+                transition:width .5s;
+            }
+
+            .race-tactics {
+                display:grid;
+                grid-template-columns:repeat(2,1fr);
+                gap:10px;
+            }
+
+            .race-tactic {
+                padding:15px;
+                color:white;
+                background:#17283a;
+                border:1px solid #30465e;
+                border-radius:7px;
+                cursor:pointer;
+                font-weight:800;
+            }
+
+            .race-tactic.selected {
+                background:#124477;
+                border-color:#168bff;
+            }
+
+            .race-start {
+                padding:17px;
+                color:white;
+                background:#168bff;
+                border:0;
+                border-radius:6px;
+                font-weight:900;
+                cursor:pointer;
+            }
+
+            .race-log {
+                background:#0b1521;
+                padding:16px;
+                border:1px solid #263b50;
+                border-radius:8px;
+                color:#aebfd0;
+                min-height:60px;
+                font-size:13px;
+                line-height:1.7;
+            }
+
+            @media(max-width:600px) {
+                .race-stats {
+                    grid-template-columns:1fr;
+                }
+                .race-scene {
+                    height:280px;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    return `
+        <div class="real-race">
+
+            <div class="race-heading">
+                <small>RACE GAME / LIVE BROADCAST</small>
                 <h2>OMLOOP VAN BRABANT</h2>
-                <p style="color:#91a8bf;margin:0">
-                    Eendagskoers · 120 kilometer · 2027
-                </p>
+                <span style="color:#91a8bf">
+                    Eendagskoers · 120 KM · SEIZOEN 2027
+                </span>
             </div>
 
-            <div class="race-status">
-                <div class="race-stat">
-                    <span>RESTERENDE AFSTAND</span>
-                    <strong id="race-distance">120 km</strong>
+            <div class="camera-buttons">
+                <button class="camera-button active"
+                    onclick="setRaceCamera('aerial')">
+                    ◈ HELIKOPTER
+                </button>
+
+                <button class="camera-button"
+                    onclick="setRaceCamera('rear')">
+                    ◈ ACHTERVOLGING
+                </button>
+            </div>
+
+            <div class="race-scene" id="race-camera-scene">
+                <div class="race-sky"></div>
+                <div class="race-road"></div>
+
+                <div class="race-camera-label">
+                    <span class="race-live-dot"></span>
+                    LIVE CAMERA 01
                 </div>
 
-                <div class="race-stat">
+                <div class="race-riders" id="race-riders">
+                    ${riders}
+                </div>
+            </div>
+
+            <div class="race-stats">
+                <div class="race-stat-box">
+                    <span>RESTANTE AFSTAND</span>
+                    <strong id="race-distance">120 km</strong>
+                </div>
+                <div class="race-stat-box">
                     <span>GEMIDDELDE SNELHEID</span>
                     <strong id="race-speed">0 km/u</strong>
                 </div>
-
-                <div class="race-stat">
+                <div class="race-stat-box">
                     <span>KOERSFASE</span>
                     <strong id="race-phase">START</strong>
                 </div>
             </div>
 
             <div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:11px">
+                <div style="display:flex;justify-content:space-between;
+                    margin-bottom:8px;font-size:11px">
                     <strong>KOERSVERLOOP</strong>
                     <span id="race-percent">0%</span>
                 </div>
                 <div class="race-progress">
-                    <div class="race-progress-fill" id="race-progress-fill"></div>
+                    <div class="race-progress-fill"
+                        id="race-progress-fill"></div>
                 </div>
             </div>
 
-            <div class="race-track">
-                <div class="track-line"></div>
-                <div class="race-riders" id="race-riders">
-                    <span class="race-rider player" style="left:8%;top:43%">🚴</span>
-                    <span class="race-rider" style="left:12%;top:22%">🚴</span>
-                    <span class="race-rider" style="left:16%;top:58%">🚴</span>
-                    <span class="race-rider" style="left:21%;top:34%">🚴</span>
-                    <span class="race-rider" style="left:26%;top:68%">🚴</span>
-                    <span class="race-rider" style="left:30%;top:18%">🚴</span>
-                    <span class="race-rider" style="left:34%;top:48%">🚴</span>
-                    <span class="race-rider" style="left:38%;top:73%">🚴</span>
-                    <span class="race-rider" style="left:43%;top:30%">🚴</span>
-                    <span class="race-rider" style="left:48%;top:55%">🚴</span>
-                    <span class="race-rider" style="left:53%;top:15%">🚴</span>
-                    <span class="race-rider" style="left:58%;top:65%">🚴</span>
-                </div>
+            <div style="color:#168bff;font-weight:900;font-size:11px;
+                letter-spacing:1px">
+                JOUW KOERSTACTIE
             </div>
 
-            <div class="race-label">KIES JOUW KOERSTACTIE</div>
-
-            <div class="race-controls">
-                <button class="race-tactic selected" data-tactic="Volgen">
-                    🚴 VOLGEN
-                </button>
-                <button class="race-tactic" data-tactic="Aanvallen">
-                    ⚡ AANVALLEN
-                </button>
-                <button class="race-tactic" data-tactic="Energie sparen">
-                    🛡️ ENERGIE SPAREN
-                </button>
-                <button class="race-tactic" data-tactic="Sprinten">
-                    🏁 SPRINTEN
-                </button>
+            <div class="race-tactics">
+                <button class="race-tactic selected"
+                    data-tactic="Volgen">🚴 VOLGEN</button>
+                <button class="race-tactic"
+                    data-tactic="Aanvallen">⚡ AANVALLEN</button>
+                <button class="race-tactic"
+                    data-tactic="Energie sparen">🛡 ENERGIE SPAREN</button>
+                <button class="race-tactic"
+                    data-tactic="Sprinten">🏁 SPRINTEN</button>
             </div>
 
             <button class="race-start" id="race-start-button">
                 START WEDSTRIJD →
             </button>
 
-            <div class="race-hero">
-                <div class="race-label">LIVE KOERSBERICHTEN</div>
+            <div class="race-heading">
+                <small>LIVE KOERSBERICHTEN</small>
                 <div class="race-log" id="race-log">
-                    De renners staan klaar voor de start.
-                    Start de wedstrijd om de koers te volgen.
+                    Het peloton staat klaar voor de start.
                 </div>
             </div>
 
@@ -933,17 +1258,20 @@ function racePageContent() {
     `;
 }
 
+function setRaceCamera(mode) {
+    const scene = document.getElementById("race-camera-scene");
+    if (!scene) return;
 
-/* ==========================================
-   RACE SIMULATION
-========================================== */
+    scene.classList.toggle("rear-camera", mode === "rear");
 
-function stopRace() {
-    if (liveRace.timer) {
-        clearInterval(liveRace.timer);
-        liveRace.timer = null;
-    }
-    liveRace.running = false;
+    document.querySelectorAll(".camera-button").forEach(button => {
+        button.classList.toggle(
+            "active",
+            button.textContent.includes(
+                mode === "rear" ? "ACHTERVOLGING" : "HELIKOPTER"
+            )
+        );
+    });
 }
 
 function startRace() {
